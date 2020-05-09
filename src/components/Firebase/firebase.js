@@ -37,5 +37,18 @@ class Firebase {
 
   group = () => this.db.collection('groups');
 
+  complaint = () => this.db.collection('complaint');
+
+  getUnsovledComplaint = () => this.db.collection('complaint').where("solved", "==", false);
+
+  compliment = () => this.db.collection('compliment');
+
+  getUnsovledCompliment = () => this.db.collection('compliment').where("solved", "==", false);
+
+  vote = () => this.db.collection('vote');
+
+  task = groupId => this.group().doc(groupId).collection('task');
+
+  evaluation = (groupId, memberId) => this.group().doc(groupId).collection('evaluation').doc(memberId);
 }
 export default Firebase;

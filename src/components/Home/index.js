@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { Component } from 'react';
+import { InfoConsumer } from '../Context/Context';
 
-const Home = () => (
-  <div>
-    <h1>Home</h1>
-  </div>
-);
+
+class Home extends Component {
+  render() {
+    return (
+      <InfoConsumer>
+        {value => {
+          return <h2>{value}</h2>
+        }}
+      </InfoConsumer>
+    );
+  }
+}
 
 export default Home;

@@ -1,12 +1,20 @@
-import React, { Component, useState } from "react";
+import React, { Component } from "react";
 import { withAuthUser } from "../Session";
 import { withFirebase } from "../Firebase";
 import { compose } from "recompose";
-import { Button, Modal, Form } from "react-bootstrap";
+import { Button } from "react-bootstrap";
+import { Group } from "./Group";
+import { WhiteList } from "./WhiteList";
+import { BlackList } from "./BlackList";
+import { Invitation } from "./invitation";
+
+import { PasswordForgetForm } from '../PasswordForget';
+import PasswordChangeForm from '../PasswordChange';
+
 class AccountPageBase extends Component {
   constructor(props) {
     super(props);
-    this.state = { references: [] };
+    this.state = { references: [], toggle: "reference" };
   }
 
   componentDidMount() {
@@ -36,6 +44,7 @@ class AccountPageBase extends Component {
   onChange = (event, email, max) => {
     let value = event.target.value;
     if (value > max) value = max;
+    if (value < 0) value = 0;
     this.setState((prev) => ({
       prev,
       references: prev.references.map((ref) => {
@@ -48,7 +57,7 @@ class AccountPageBase extends Component {
   };
 
   submitScore = (email, score) => {
-    this.props.firebase.user(email).update({ score });
+    this.props.firebase.user(email).update({ score: parseInt(score) });
     const docRef = this.props.firebase.user(email);
     this.props.firebase.user(this.state.email).update({
       refs: this.props.firebase.app.firestore.FieldValue.arrayRemove(docRef),
@@ -62,7 +71,7 @@ class AccountPageBase extends Component {
   Reference = () => {
     let max = 10;
     if (this.state.role === "VIP") max = 20;
-    if (this.state.references.length) {
+    if (this.state.references.length && this.state.references.length > 0) {
       return this.state.references.map((ref) => (
         <div>
           <input
@@ -81,142 +90,61 @@ class AccountPageBase extends Component {
     } else return <></>;
   };
 
-  render() {
-    return (
-      <div>
+  toggleChange = (event) => {
+    const value = event.target.value;
+    this.setState({ toggle: value });
+  };
+
+  ConditionalRender = () => {
+    const { toggle } = this.state;
+    if (toggle === "reference") return <this.Reference />;
+    else if (toggle === "whiteList")
+      return (
         <WhiteList
           currentUserEmail={this.state.email}
           firebase={this.props.firebase}
+          whiteList={this.state.whiteList}
         />
+      );
+    else if (toggle === "blackList")
+      return (
         <BlackList
           currentUserEmail={this.state.email}
           firebase={this.props.firebase}
+          blackList={this.state.blackList}
         />
-        <Group firebase={this.props.firebase} />
-        <this.Reference />
+      );
+    else if (toggle === "group")
+      return <Group currentUserEmail={this.state.email} currentUserGroups={this.state.groups} firebase={this.props.firebase} />;
+    else if (toggle === 'invitation') return <Invitation />
+  };
+
+  render() {
+    return (
+      <div classname="account_contents" style={{ textAlign: "center", paddingTop: "12rem" }}>
+        <h1>Account Features</h1>
+        <Button onClick={this.toggleChange} variant="info" value="reference">
+          reference
+        </Button>{" "}
+        <Button onClick={this.toggleChange} variant="info" value="whiteList">
+          white list
+        </Button>{" "}
+        <Button onClick={this.toggleChange} variant="info" value="blackList">
+          black list
+        </Button>{" "}
+        <Button onClick={this.toggleChange} variant="info" value="group">
+          group
+        </Button>{" "}
+        <Button onClick={this.toggleChange} variant="info" value="invitation">
+          invitation
+        </Button>
+        <this.ConditionalRender />
       </div>
     );
   }
 }
-
-const WhiteList = ({ currentUserEmail, firebase }) => {
-  const [email, setEmail] = useState("");
-  const onChange = (event) => setEmail(event.target.value);
-  const handleAdd = () => {
-    firebase
-      .user(email)
-      .get()
-      .then((res) => {
-        if (res.exists) {
-          firebase.user(currentUserEmail).update({
-            whiteList: firebase.app.firestore.FieldValue.arrayUnion(res.ref),
-          });
-          setEmail('');
-          alert("success!");
-        } else alert("user not exists!");
-      });
-  };
-
-  return (
-    <Form.Row>
-      <Form.Control
-        onChange={onChange}
-        type="email"
-        placeholder="email"
-        value={email}
-      />
-      <Button variant="primary" onClick={handleAdd}>
-        Add
-      </Button>
-    </Form.Row>
-  );
-};
-
-const BlackList = ({ currentUserEmail, firebase }) => {
-  const [email, setEmail] = useState("");
-  const onChange = (event) => setEmail(event.target.value);
-  const handleAdd = () => {
-    firebase
-      .user(email)
-      .get()
-      .then((res) => {
-        if (res.exists) {
-          firebase.user(currentUserEmail).update({
-            blackList: firebase.app.firestore.FieldValue.arrayUnion(res.ref),
-          });
-          setEmail('');
-          alert("success!");
-        } else alert("user not exists!");
-      });
-  };
-  return (
-    <Form.Row>
-      <Form.Control
-        onChange={onChange}
-        type="email"
-        placeholder="email"
-        value={email}
-      />
-      <Button variant="primary" onClick={handleAdd}>
-        Add
-      </Button>
-    </Form.Row>
-  );
-};
-
-const Group = ({ firebase }) => {
-  const [groupData, setGroupData] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const handleShow = () => setShowModal(!showModal);
-  const handleFormChange = (event) =>
-    setGroupData({ ...groupData, [event.target.name]: event.target.value });
-  const handleConfirm = () => {
-    firebase.group().add(groupData);
-  };
-  return (
-    <>
-      <Button variant="primary" onClick={handleShow}>
-        Form a new Group
-      </Button>
-      <Modal show={showModal} onHide={handleShow} animation={false}>
-        <Modal.Header closeButton>
-          <Modal.Title>New Group</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Control
-              onChange={handleFormChange}
-              type="text"
-              name="name"
-              placeholder="group name"
-            />
-            <Form.Control
-              onChange={handleFormChange}
-              as="textarea"
-              name="public"
-              placeholder="public infomation"
-            />
-            <Form.Control
-              onChange={handleFormChange}
-              as="textarea"
-              name="private"
-              placeholder="private infomation"
-            />
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleShow}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={handleConfirm}>
-            Confirm
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
-  );
-};
-
 const AccountPage = compose(withAuthUser, withFirebase)(AccountPageBase);
 
-export default withAuthUser(AccountPage);
+
+
+export default AccountPage;

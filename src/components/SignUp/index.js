@@ -4,7 +4,7 @@ import * as ROUTES from '../../constants/routes';
 import { withFirebase } from '../Firebase';
 import { compose } from 'recompose';
 const SignUpPage = () => (
-    <div>
+    <div style={{ textAlign: "center" ,paddingTop: "6rem"}}>
       <h1>Sign Up</h1>
       <SignUpForm />
     </div>
@@ -55,7 +55,7 @@ class SignUpFormBase extends Component {
     this.checkIfUserExist(email).then(userExist => {
       if (!userExist) {
         this.props.firebase.pendingUser(email)
-        .set({name, email, interest, credential, reference, rejected: "init", date: new Date()})
+        .set({name, email, interest, credential, reference, rejected: "init", createdAt: new Date()})
         .then(res => {
           this.setState({...INITIAL_STATE});
           this.props.history.push(ROUTES.HOME);
@@ -89,35 +89,35 @@ class SignUpFormBase extends Component {
           onChange={this.onChange}
           type="text"
           placeholder="Full Name"
-        />
+        /><br/>
         <input
           name="email"
           value={email}
           onChange={this.onChange}
           type="text"
           placeholder="Email Address"
-        />
+        /><br/>
         <input
           name="interest"
           value={interest}
           onChange={this.onChange}
           type="text"
           placeholder="Interest"
-        />
+        /><br/>
         <input
           name="credential"
           value={credential}
           onChange={this.onChange}
           type="text"
           placeholder="Credential"
-        />
+        /><br/>
         <input
           name="reference"
           value={reference}
           onChange={this.onChange}
           type="text"
           placeholder="Reference"
-        />
+        /><br/>
         <button type="submit" disabled={isInvalid}>Sign Up</button>
         {error && <p>{error.message}</p>}
       </form>
